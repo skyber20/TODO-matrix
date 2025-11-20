@@ -16,8 +16,11 @@ class JsonManager:
                 json.dump([], f)
 
     def read_json(self) -> list[Task]:
-        with open(self.path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        try:
+            with open(self.path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            self._create_json()
 
         tasks = []
         for task_dict in data:
@@ -27,6 +30,8 @@ class JsonManager:
 
     def load_json(self, tasks: list[Task]) -> None:
         tasks_dicts = [task.model_dump() for task in tasks]
-        with open(self.path, 'w', encoding='utf-8') as f:
-            json.dump(tasks_dicts, f, ensure_ascii=False, indent=2)
-
+        try:
+            with open(self.path, 'w', encoding='utf-8') as f:
+                json.dump(tasks_dicts, f, ensure_ascii=False, indent=2)
+        except FileNotFoundError:
+            self._create_json()
