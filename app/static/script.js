@@ -2,6 +2,7 @@ class TaskMatrix {
     constructor() {
         this.tasks = [];
         this.draggedTask = null;
+        this.baseUrl = window.location.origin; // Добавляем базовый URL
         this.init();
     }
 
@@ -13,13 +14,13 @@ class TaskMatrix {
 
     bindEvents() {
         document.getElementById('addTaskBtn').addEventListener('click', (e) => {
-            e.preventDefault(); // ← ДОБАВЬ ЭТУ СТРОЧКУ
+            e.preventDefault();
             this.addTask();
         });
         
         document.getElementById('taskInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                e.preventDefault(); // ← ДОБАВЬ ЭТУ СТРОЧКУ
+                e.preventDefault();
                 this.addTask();
             }
         });
@@ -31,7 +32,7 @@ class TaskMatrix {
         
         try {
             console.log('вот ща ща');
-            const response = await fetch('http://localhost:8000/get_tasks');
+            const response = await fetch(`${this.baseUrl}/get_tasks`); // Исправлено
             console.log('и наш ответ..', response.status);
             
             if (response.ok) {
@@ -50,6 +51,7 @@ class TaskMatrix {
 
     // Отправка новой задачи на сервер
     async addTask() {
+        console.log('добавляю новую таску')
         const input = document.getElementById('taskInput');
         const select = document.getElementById('quadrantSelect');
 
@@ -78,7 +80,7 @@ class TaskMatrix {
         };
 
         try {
-            const response = await fetch('http://localhost:8000/add_task', {
+            const response = await fetch(`${this.baseUrl}/add_task`, { // Исправлено
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -89,7 +91,7 @@ class TaskMatrix {
             if (response.ok) {
                 const newTask = await response.json();
                 this.tasks.push(newTask);
-                this.render(); // только один render
+                this.render();
                 input.value = '';
                 input.focus();
             } else {
@@ -103,22 +105,31 @@ class TaskMatrix {
 
     // Обновление задачи (выполнено/не выполнено)
     async toggleTask(id) {
+        console.log('toggle task', id);
         const task = this.tasks.find(t => t.id === id);
         if (task) {
-            const oldDone = task.done; // сохраняем старое значение
+            console.log('меняю done с', task.done, 'на', !task.done);
+            const oldDone = task.done;
             task.done = !task.done;
-
+            
             try {
-                await fetch(`http://localhost:8000/done_task/${id}`, {
+                const response = await fetch(`${this.baseUrl}/done_task/${id}`, { // Исправлено
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                 });
+                
+                if (response.ok) {
+                    this.render();
+                } else {
+                    task.done = oldDone;
+                    console.error('Ошибка обновления на сервере');
+                }
             } catch (error) {
                 task.done = oldDone;
-                console.error('Ошибка обновления:', error);
-                this.render(); // перерисовываем только при ошибке
+                console.error('Ошибка сети:', error);
+                this.render();
             }
         }
     }
@@ -129,23 +140,21 @@ class TaskMatrix {
             const taskIndex = this.tasks.findIndex(t => t.id === id);
             if (taskIndex === -1) return;
 
-            const deletedTask = this.tasks[taskIndex]; // сохраняем на случай отката
-            this.tasks.splice(taskIndex, 1); // удаляем локально
-            this.render(); // сразу обновляем интерфейс
+            const deletedTask = this.tasks[taskIndex];
+            this.tasks.splice(taskIndex, 1);
+            this.render();
 
             try {
-                const response = await fetch(`http://localhost:8000/delete_task/${id}`, {
+                const response = await fetch(`${this.baseUrl}/delete_task/${id}`, { // Исправлено
                     method: 'DELETE'
                 });
 
                 if (!response.ok) {
-                    // ОШИБКА: возвращаем задачу
                     this.tasks.splice(taskIndex, 0, deletedTask);
                     this.render();
                     alert('Ошибка при удалении задачи');
                 }
             } catch (error) {
-                // ОШИБКА: возвращаем задачу
                 this.tasks.splice(taskIndex, 0, deletedTask);
                 this.render();
                 console.error('Ошибка удаления:', error);
@@ -171,11 +180,11 @@ class TaskMatrix {
             }
 
             const oldQuadrant = task.quadrant;
-            task.quadrant = newQuadrant; // меняем локально
-            this.render(); // сразу обновляем интерфейс
+            task.quadrant = newQuadrant;
+            this.render();
 
             try {
-                const response = await fetch(`http://localhost:8000/move_task/${id}`, {
+                const response = await fetch(`${this.baseUrl}/move_task/${id}`, { // Исправлено
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -184,13 +193,11 @@ class TaskMatrix {
                 });
 
                 if (!response.ok) {
-                    // ОШИБКА: откатываем изменения
                     task.quadrant = oldQuadrant;
                     this.render();
                     alert('Ошибка при перемещении задачи');
                 }
             } catch (error) {
-                // ОШИБКА: откатываем изменения
                 task.quadrant = oldQuadrant;
                 this.render();
                 console.error('Ошибка перемещения:', error);
@@ -251,6 +258,7 @@ class TaskMatrix {
     }
 
     createTaskElement(task) {
+        console.log('Creating task element:', task.text, 'done:', task.done, 'class:', task.done ? 'done' : '');
         const div = document.createElement('div');
         div.className = 'task-item';
         div.draggable = true;

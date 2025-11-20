@@ -1,8 +1,8 @@
 import logging
-
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from app.work_with_json import JsonManager
-from fastapi.middleware.cors import CORSMiddleware
 from app.models.task import Task, CreateTask, NewQuadrant
 from datetime import datetime
 
@@ -10,15 +10,23 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
-json_manager = JsonManager()
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500", "http://localhost:5500"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"],
-)
+# ДОБАВЛЕННЫЙ БЛОК
+@app.middleware("http")
+async def disable_static_cache(request, call_next):
+    response = await call_next(request)
+    if request.url.path.endswith(('.js', '.css', '.html')):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+    return response
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+@app.get("/")
+async def read_root():
+    return FileResponse("app/static/index.html")
+
+json_manager = JsonManager()
 
 
 @app.get('/get_tasks')
