@@ -90,3 +90,11 @@ async def move_task(task_id: int, new_quadrant: NewQuadrant):
 
     json_manager.load_json(existing_tasks)
 
+
+@app.get('/health')
+def get_health():
+    logger.info('я проверяю здоровье')
+    return {
+        'status': 'healthy'
+    }
+
