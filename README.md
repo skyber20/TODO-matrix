@@ -3,9 +3,14 @@
 Приложение для управления задачами по матрице Эйзенхауэра, упакованное в Docker контейнер
 
 ---
+
+Ссылка на Docker Hub: ```https://hub.docker.com/repository/docker/skyber2/todo-app```
+
+---
+
 ## Как запускать
 ### Запуск для пользования (без bind mount)
-```bash
+```bash 
 docker run -d -p 8000:8000 skyber2/todo-app:latest
 ```
 или
