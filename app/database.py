@@ -1,4 +1,3 @@
-import os
 from app.constants import DATABASE_URL, TABLE_NAME
 from sqlalchemy import create_engine, Column, BigInteger, String, Integer, Boolean
 from sqlalchemy.orm import sessionmaker, declarative_base
