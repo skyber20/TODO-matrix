@@ -1,8 +1,9 @@
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.work_with_json import JsonManager
+from sqlalchemy.orm import Session
+from app.database import get_db, TaskModel, check_exist_table
 from app.models.task import Task, CreateTask, NewQuadrant
 from datetime import datetime
 
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# ДОБАВЛЕННЫЙ БЛОК
+
 @app.middleware("http")
 async def disable_static_cache(request, call_next):
     response = await call_next(request)
@@ -22,79 +23,108 @@ async def disable_static_cache(request, call_next):
 
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+
 @app.get("/")
 async def read_root():
     return FileResponse("app/static/index.html")
 
-json_manager = JsonManager()
+
+@app.on_event('startup')
+async def startup():
+    if not check_exist_table():
+        logger.warning("Таблица todos не найдена")
+    else:
+        logger.info("Таблица 'tasks' найдена")
 
 
 @app.get('/get_tasks')
-def get_all_tasks():
-    logger.info('я в получении тасок')
-    tasks = json_manager.read_json()
-    return tasks
+def get_all_tasks(db: Session = Depends(get_db)):
+    logger.info('я в получении тасок из Postgres')
+
+    tasks = db.query(TaskModel).order_by(TaskModel.id).all()
+
+    res = []
+    for task in tasks:
+        res.append(Task(
+            id=task.id,
+            text=task.text,
+            quadrant=task.quadrant,
+            done=task.done
+        ))
+
+    return res
 
 
 @app.post('/add_task')
-async def add_new_task(data_to_create_task: CreateTask):
-    logger.info('я в добавлении таски')
+async def add_new_task(data_to_create_task: CreateTask, db: Session = Depends(get_db)):
+    logger.info('Добавление новой задачи в Postgres')
 
-    existing_tasks = json_manager.read_json()
     new_id = int(datetime.now().timestamp())
-    new_task = Task(
-        id = new_id,
+
+    new_task = TaskModel(
+        id=new_id,
         text=data_to_create_task.text,
         quadrant=data_to_create_task.quadrant,
         done=False
     )
-    existing_tasks.append(new_task)
 
-    json_manager.load_json(existing_tasks)
+    db.add(new_task)
+    db.commit()
 
-    return new_task
+    logger.info('Добавил новую таску')
+
+    return Task(
+        id=new_task.id,
+        text=new_task.text,
+        quadrant=new_task.quadrant,
+        done=new_task.done
+    )
 
 
 @app.put('/done_task/{task_id}')
-async def update_done_task(task_id: int):
-    logger.info('я меняю состояние done')
-    existing_tasks = json_manager.read_json()
+async def update_done_task(task_id: int, db: Session = Depends(get_db)):
+    logger.info('Изменяю статус done')
 
-    for exist_task in existing_tasks:
-        if exist_task.id == task_id:
-            exist_task.done = not exist_task.done
-            logger.info('я поменял состояние done')
-    
-    json_manager.load_json(existing_tasks)
+    task = db.query(TaskModel).filter(TaskModel.id == task_id).first()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+
+    task.done = not task.done
+    db.commit()
+    logger.info('статус done поменян')
 
 
 @app.delete('/delete_task/{task_id}')
-async def delete_task(task_id: int):
-    logger.info('я буду удалять таску')
-    existing_tasks = json_manager.read_json()
-    filtered_tasks = [exist_task for exist_task in existing_tasks if exist_task.id != task_id]
+async def delete_task(task_id: int, db: Session = Depends(get_db)):
+    logger.info('Удаление задачи из Postgres')
 
-    logger.info('удалил таску')
-    json_manager.load_json(filtered_tasks)
+    task = db.query(TaskModel).filter(TaskModel.id == task_id).first()
+
+    if not task:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
+
+    db.delete(task)
+    db.commit()
+    logger.info('Задача удалена')
 
 
 @app.put('/move_task/{task_id}')
-async def move_task(task_id: int, new_quadrant: NewQuadrant):
-    logger.info('я буду перемещать задачу в другой квадрант')
-    existing_tasks = json_manager.read_json()
+async def move_task(task_id: int, new_quadrant: NewQuadrant, db: Session = Depends(get_db)):
+    logger.info('Перемещение задачи в другой квадрант')
 
-    for exist_task in existing_tasks:
-        if exist_task.id == task_id:
-            exist_task.quadrant = new_quadrant.quadrant
-            logger.info('я переместил таску в новый квадрант')
+    task = db.query(TaskModel).filter(TaskModel.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Задача не найдена")
 
-    json_manager.load_json(existing_tasks)
+    task.quadrant = new_quadrant.quadrant
+    db.commit()
+    logger.info('Задача перенесена в другой квадрант')
 
 
 @app.get('/health')
 def get_health():
-    logger.info('я проверяю здоровье')
+    logger.info('Проверка здоровья приложухи')
     return {
         'status': 'healthy'
     }
-
