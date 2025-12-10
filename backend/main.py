@@ -1,10 +1,9 @@
 import logging
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from app.database import get_db, TaskModel, Base, engine
-from app.models.task import Task, CreateTask, NewQuadrant
+from database import get_db, TaskModel
+from models.task import Task, CreateTask, NewQuadrant
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
@@ -12,34 +11,22 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-
-@app.middleware("http")
-async def disable_static_cache(request, call_next):
-    response = await call_next(request)
-    if request.url.path.endswith(('.js', '.css', '.html')):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache"
-    return response
-
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-
-@app.get("/")
-async def read_root():
-    return FileResponse("app/static/index.html")
-
-
-@app.on_event('startup')
-async def startup():
-    try:
-        Base.metadata.create_all(bind=engine)
-        logger.info('Таблицы БД проверены/созданы')
-    except Exception as e:
-        logger.error(f'Произошла ошибка: {e}')
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:80",
+        "http://frontend",
+        "http://todo-front",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get('/get_tasks')
-def get_all_tasks(db: Session = Depends(get_db)):
+async def get_all_tasks(db: Session = Depends(get_db)):
     logger.info('я в получении тасок из Postgres')
 
     tasks = db.query(TaskModel).order_by(TaskModel.id).all()
@@ -129,3 +116,8 @@ def get_health():
     return {
         'status': 'healthy'
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
