@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS tasks (
+    id BIGINT PRIMARY KEY,
+    text TEXT NOT NULL,
+    quadrant INTEGER NOT NULL,
+    done BOOLEAN DEFAULT FALSE
+);

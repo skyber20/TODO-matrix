@@ -3,7 +3,7 @@ version: '3.8'
 services:
   db:
     image: postgres:15-alpine
-    container_name: todo_db
+    container_name: todo-db
     env_file: .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -11,28 +11,34 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - ./init-db:/docker-entrypoint-initdb.d
+    networks:
+      - backend
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER}" ]
-      interval: 10s
-      timeout: 5s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
       retries: 5
     restart: unless-stopped
 
   backend:
     build: .
-    container_name: todo_back
+    container_name: todo-back
     env_file: .env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    networks:
+      - backend
     ports:
       - "8000:8000"
     depends_on:
       db:
-          condition: service_healthy
+        condition: service_healthy
     volumes:
-      - ./app:/app
+      - ./backend:/app/backend
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -41,6 +47,50 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  frontend:
+    image: python:3.11-slim
+    container_name: todo-front
+    ports:
+      - "80:80"
+    networks:
+      - frontend
+      - backend
+    volumes:
+      - ./frontend/static:/app/static
+    working_dir: /app
+    command: python -m http.server 80 --bind 0.0.0.0
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  adminer:
+    image: adminer
+    container_name: todo-adminer
+    ports:
+      - "8080:8080"
+    networks:
+      - backend
+    depends_on:
+      - db
+    profiles:
+      - dev
+
+  busybox:
+    image: busybox:latest
+    container_name: todo-monitor
+    command: sleep infinity
+    networks:
+      - backend
+    profiles:
+      - prod
+
 volumes:
   postgres_data:
     driver: local
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge

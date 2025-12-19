@@ -3,4 +3,4 @@
 .env
 __pycache__
 data/todos.json
-app/constants.py
+backend/constants.py

@@ -2,7 +2,17 @@ class TaskMatrix {
     constructor() {
         this.tasks = [];
         this.draggedTask = null;
-        this.baseUrl = window.location.origin; // Добавляем базовый URL
+
+        const currentHost = window.location.hostname;
+
+        if (currentHost === 'localhost' || currentHost === '127.0.0.1') {
+            this.baseUrl = 'http://localhost:8000';
+        } else {
+            this.baseUrl = 'http://backend:8000';
+        }
+
+        console.log('API URL:', this.baseUrl);
+
         this.init();
     }
 

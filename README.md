@@ -11,11 +11,11 @@
 ## Как запускать
 ### Запуск для пользования (без bind mount)
 ```bash 
-docker run -d -p 8000:8000 skyber2/todo-app:latest
+docker run -d -p 8000:8000 skyber2/todo-backend:latest
 ```
 или
 ```bash
-docker run -d -p 8000:8000 skyber2/todo-app:1.0
+docker run -d -p 8000:8000 skyber2/todo-backend:1.0
 ```
 
 Важно: сайт будет находиться по ссылке: ```http://localhost:8000/```
@@ -36,11 +36,11 @@ curl http://localhost:8000/get_tasks
 ## Запуск для тех, у кого есть исходный код (с bind mount)
 - на винде
 ```bash
-docker run -d -p 8000:8000 -v ${PWD}/app:/app-todo-list/app skyber2/todo-app:latest
+docker run -d -p 8000:8000 -v ${PWD}/backend:/backend-todo-list/backend skyber2/todo-backend:latest
 ```
 - на маке/линукс
 ```bash
-docker run -d -p 8000:8000 -v $(pwd)/app:/app-todo-list/app skyber2/todo-app:latest
+docker run -d -p 8000:8000 -v $(pwd)/backend:/backend-todo-list/backend skyber2/todo-backend:latest
 ```
 
 ---
@@ -48,7 +48,7 @@ docker run -d -p 8000:8000 -v $(pwd)/app:/app-todo-list/app skyber2/todo-app:lat
 ## Структура проекта
 ```bash
 корневая папка проекта/
-├── app/              # ← эта папка монтируется в контейнер
+├── backend/              # ← эта папка монтируется в контейнер
 │   ├── main.py
 │   ├── static/
 │   │   ├── index.html
