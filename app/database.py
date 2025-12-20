@@ -3,9 +3,17 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.constants import DATABASE_URL
 
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Добавляем retry логику для Docker
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    echo=False,
+    connect_args={
+        "connect_timeout": 10
+    }
+)
 
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
@@ -18,13 +26,19 @@ class TaskDB(Base):
     done = Column(Boolean, default=False)
 
 
-# Создаем таблицы
-Base.metadata.create_all(bind=engine)
-
-
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+# Функция для проверки и создания таблиц
+def init_database():
+    """Инициализирует базу данных при запуске"""
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("База данных инициализирована")
+    except Exception as e:
+        print(f"Ошибка при инициализации БД: {e}")

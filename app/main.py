@@ -3,16 +3,16 @@ from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from app.database import get_db, TaskDB
+from app.database import get_db, TaskDB, init_database
 from app.models.task import Task, CreateTask, NewQuadrant
 from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+init_database()
 app = FastAPI()
 
-# ДОБАВЛЕННЫЙ БЛОК
 @app.middleware("http")
 async def disable_static_cache(request, call_next):
     response = await call_next(request)
@@ -59,7 +59,6 @@ async def add_new_task(data_to_create_task: CreateTask, db: Session = Depends(ge
     db.add(new_task_db)
     db.commit()
 
-    # Возвращаем в формате Task
     new_task = Task(
         id=new_task_db.id,
         text=new_task_db.text,
