@@ -1,7 +1,6 @@
 import sys
 from pathlib import Path
 
-# Добавляем путь к проекту
 sys.path.append(str(Path(__file__).parent))
 
 from app.database import engine, Base

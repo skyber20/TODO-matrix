@@ -3,7 +3,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from app.constants import DATABASE_URL
 
-# Добавляем retry логику для Docker
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
@@ -34,7 +33,6 @@ def get_db():
         db.close()
 
 
-# Функция для проверки и создания таблиц
 def init_database():
     """Инициализирует базу данных при запуске"""
     try:

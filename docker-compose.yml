@@ -22,9 +22,10 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4:latest
+    env_file: .env
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5050:80"
     networks:
@@ -37,7 +38,7 @@ services:
     profiles: ["development"]
 
   app:
-    build: .
+    image: skyber2/ipr-lab-3:latest
     ports:
       - "8000:8000"
     env_file: .env

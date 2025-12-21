@@ -1,75 +1,57 @@
-# TODO Matrix 
+# Лабораторная работа 3
 
-Приложение для управления задачами по матрице Эйзенхауэра, упакованное в Docker контейнер
-
----
-
-Ссылка на Docker Hub: ```https://hub.docker.com/repository/docker/skyber2/todo-app```
+Многоконтейнерное приложение TODO Matrix с использованием матрицы Эйзенхауэра, состоящее из трёх сервисов: базы данных PostgreSQL, бэкенда на FastAPI и панели администратора PgAdmin.
 
 ---
 
-## Как запускать
-### Запуск для пользования (без bind mount)
-```bash 
-docker run -d -p 8000:8000 skyber2/todo-app:latest
-```
-или
-```bash
-docker run -d -p 8000:8000 skyber2/todo-app:1.0
-```
-
-Важно: сайт будет находиться по ссылке: ```http://localhost:8000/```
-
----
-## Некоторые проверки на работоспособность сайта
-- Health check
-```bash
-curl http://localhost:8000/health
-```
-- Получить задачи (вернет [], если ранее задачи не добавлялись)
-```bash
-curl http://localhost:8000/get_tasks
-```
-
----
-
-## Запуск для тех, у кого есть исходный код (с bind mount)
-- на винде
-```bash
-docker run -d -p 8000:8000 -v ${PWD}/app:/app-todo-list/app skyber2/todo-app:latest
-```
-- на маке/линукс
-```bash
-docker run -d -p 8000:8000 -v $(pwd)/app:/app-todo-list/app skyber2/todo-app:latest
-```
+Docker Hub: ```skyber2/ipr-lab-3:latest```
 
 ---
 
 ## Структура проекта
+
 ```bash
-корневая папка проекта/
-├── app/              # ← эта папка монтируется в контейнер
-│   ├── main.py
-│   ├── static/
-│   │   ├── index.html
-│   │   ├── styles.css
-│   │   └── script.js
-│   └── ...
-├── Dockerfile
-└── requirements.txt
-└── ...
+lab3/
+├── app/                    # Основное приложение (FastAPI + фронт)
+├── docker-compose.yml      # Docker Compose конфигурация
+├── Dockerfile             # Докерфайл
+├── .env.example           # Пример файла с переменными окружения
+├── requirements.txt       # Зависимости проекта
+└── README.md              # Документация
 ```
 
+## Как запускать
+1. Скопировать файлы docker-compose.yml и .env.example
+2. Выполнить команду
+```bash 
+cp .env.example .env
+```
+3. Отредактируйте .env
+4. Запустить приложение командой ```bash docker compose --profile development up -d```
+
+---
+После запуска система будет доступна:
+
+- Само приложение: http://localhost:8000
+- Документация API (Swagger): http://localhost:8000/docs
+- PgAdmin (управление БД): http://localhost:5050
+
 ---
 
-## Реализовано:
-- Dockerfile со всеми необходимыми зависимостями
-- .dockerignore для уменьшения размера образа
-- Health check для мониторинга состояния
-- Bind mounts для разработки с live-reload
-- Размер образа < 500MB
+## Что реализовано:
+- 3 сервиса в Docker Compose: PostgreSQL, FastAPI приложение, PgAdmin.
+- Multi-stage Dockerfile: итоговый образ < 200 МБ.
+- Изоляция: сервисы работают в отдельной сети.
+- Health checks для основных сервисов.
+- Volumes для сохранения данных БД.
+- Профили (development - запускаются все сервисы, production - все, кроме pgAdmin)
 
 ---
+## Некоторые проверки на работоспособность сайта
+Health check
+```bash
+curl http://localhost:8000/health
+```
 
 ## Вывод:
-Отпрактиковал основные команды докера и упаковывать небольшие приложения в контейнеры
+Отпрактиковал навыки упаковки многокомпонентного приложения (БД, бэкенд, админка) в контейнеры с управлением через Docker Compose

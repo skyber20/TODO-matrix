@@ -28,10 +28,8 @@ class DatabaseManager:
         """Сохраняем задачи в БД (оставляем старое название для совместимости)"""
         db = next(get_db())
         try:
-            # Удаляем все существующие задачи
             db.query(TaskDB).delete()
 
-            # Добавляем новые
             for task in tasks:
                 task_db = TaskDB(
                     id=task.id,
