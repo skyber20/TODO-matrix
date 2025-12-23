@@ -18,9 +18,9 @@ test:
     - pip install -r requirements.txt
   script:
     - echo "ЗАПУСК ВСЕХ ТЕСТОВ..."
-    - - python -m pytest tests/ -v --cov=app --cov-report=xml --cov-report=html --junitxml=junit.xml --cov-fail-under=70
+    - python -m pytest tests/ -v --cov=app --cov-report=xml --cov-report=html --junitxml=junit.xml --cov-fail-under=70
     - echo "ТЕСТЫ ПРОЙДЕНЫ, ПОКРЫТИЕ >70%!"
-    - coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
+  coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
   artifacts:
     when: always
     reports:
